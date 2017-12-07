@@ -4,15 +4,17 @@ import argparse
 
 
 FLAGS = None
-class StrangeEngine:
+
+
+class StrangeEngine(object):
     def __init__(self):
-        self.__javis_data= JavisData()
+        self.__javis_data = JavisData()
 
     def create_javis(self, uid, token):
         self.__javis_data.create_javis(uid, token)
 
     def build_dominat(self, path, filename):
-        self.__javis_data.calut_dominant(path,filename)
+        self.__javis_data.calut_dominant(path, filename)
 
     def build_dominat_bar(self, filename, out_dir):
         self.__javis_data.build_domiant_bar(filename, out_dir)
@@ -31,7 +33,7 @@ if __name__ == '__main__':
     parser.add_argument('--check_file', type=str)
     parser.add_argument('--dominat_file', type=str)
     parser.add_argument('--out_dir', type=str)
-    FLAGS, unparsed = parser.parse_known_args()
+    FLAGS, _ = parser.parse_known_args()
     if FLAGS.type == None:
         print "4. check data"
     else:

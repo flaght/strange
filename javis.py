@@ -7,10 +7,11 @@ import time
 import json
 from mlog import MLog
 
-#h_type = 4
-#head = [0, 0, h_type, 0, 4003, 0, 3, 7, 6]
+# h_type = 4
+# head = [0, 0, h_type, 0, 4003, 0, 3, 7, 6]
 
-class Client:
+
+class Client(object):
     domain = '47.95.193.202'
     port = 16100
 
@@ -19,19 +20,19 @@ class Client:
         self.sock.connect((self.domain, self.port))
         self.list = []
         self.log = MLog(name="javis")
+
     def __del__(self):
         self.sock.close()
-
 
     def __send_message(self, sock, packBuf, total):
         i = total
         while i > 0:
-            #print('i: %d' % i)
+            # print('i: %d' % i)
             sock.send(packBuf)
             time.sleep(1)
-            recvBuff = sock.recv(8024000)
-            #print recvBuff
-            dynatick = json.loads(recvBuff)
+            recv_buff = sock.recv(8024000)
+            # print recvBuff
+            dynatick = json.loads(recv_buff)
             #unit_dynatick = dynatick.get('dt')
             next_time = dynatick.get('nt') 
             i -= 1
