@@ -1,14 +1,14 @@
 # coding: utf-8
 
 import tensorflow as tf
-from data_sets import DataSets,GFDataSet
+from data_sets import DataSets,GFDataSet,PDataSet
 from monitor import Monitor
 import numpy as np
 import os
 import fc_inference
 #from sklearn.preprocessing import MinMaxScaler
 
-INPUT_NODE = 13
+INPUT_NODE = 4 *  4
 
 LEARNING_RATE_BASE = 0.0 
 LEARNING_RATE_DECAY = 0.99
@@ -18,7 +18,7 @@ MOVING_AVERAGE_DECAY = 0.99
 
 MODEL_SAVE_PATH = './model/'
 MODEL_NAME = 'model.ckpt'
-SUMMARY_DIR = 'flog/'
+SUMMARY_DIR = 'log/'
 
 def train(data_sets):
     f_monitor = Monitor(SUMMARY_DIR)
@@ -80,33 +80,14 @@ def train(data_sets):
                                                      feed_dict = {x:np.squeeze(np.array(train_x[step:step+1])),
                                                                   y:np.squeeze(np.array(train_y[step:step+1]))})
                 f_monitor.writer(summary,step_)
-                if step_ % 1000 == 0:
-                    
+                if step_ % 100 == 0:                    
                     print("After %d training step(s), loss on training"
-                          " batch is %g acc" %(step_,mse_final))
-                    saver.save(sess,os.path.join(MODEL_SAVE_PATH,MODEL_NAME),global_step=step_)
-'''    
-        i = 0
-        train_batchs = data_sets.gf_train_batch()
-        while i < data_sets.gf_train_count():
-            data_set = train_batchs.next()
-            j = 0
-            while j < data_set.train_count() - 1:
-                data_train = data_set.train_batch().next()
-                batch_x = data_train[0]
-                rebatch_x = np.reshape(batch_x,[-1, 13 * 4])
-                batch_y = np.array([data_train[1]])
-                _,mse_final,summary,step = sess.run([train_op, loss, merged, global_step], feed_dict={x:rebatch_x,y_:batch_y})
-                if step  % 100 == 0:
-                    print("After %d  training step(s), loss on training"
-                         " batch is %g" %(step,mse_final))
-                    saver.save(sess, os.path.join(MODEL_SAVE_PATH,MODEL_NAME),global_step=global_step)
-                f_monitor.writer(summary,step)
-                j += 1
-            i += 1
-'''
+                          " batch is %g" %(step_,mse_final))
+                    if step_ % 500 == 0:
+                        saver.save(sess,os.path.join(MODEL_SAVE_PATH,MODEL_NAME),global_step=step_)
+
 def main(argv=None):
-    data_set = GFDataSet()
+    data_set = PDataSet()
     data_set.calcu_etf('./data/out_dir/ag1606_20160104.csv')
     train(data_set)
     #data_set = GFDataSet()
