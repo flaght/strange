@@ -8,22 +8,94 @@ import pdb
 from sklearn.preprocessing import MinMaxScaler
 
 
+class DataSets(object):
+    def __init__(self):
+        self.data_sets = []
+
+    def gf_etf(self, cur_dir):
+        for path, dirs, fs in os.walk(cur_dir):
+            for f in fs:
+                data_sets = PDataSet()
+                data_sets.calc_etf(os.path.join(path, f))
+                self.gf_data_sets.append(data_sets)
+
+    def gf_train_batch(self):
+        return iter(self.gf_data_sets)
+
+
 class PDataSet(object):
 
-    def __init__(self, train_step=55, test_step=50):
+    def __init__(self, dim=4, next_time=1, train_step=55, test_step=50):
         self._x_train = []
         self._y_train = []
         self._x_test = []
         self._y_test = []
         self._train_step = train_step
         self._test_step = test_step
+        self._dim = dim
+        self._next_time = next_time
+
+    # 当前时间的前4个记录,预测当前时间的下个时间的最高价
+    def _calc_price_data(self, data_train, data_test):
+
+        # 标准化
+        normalized_train_data = (data_train - np.mean(data_train, axis=0)) / np.std(data_train, axis=0)
+        normalized_test_data = (data_test - np.mean(data_test, axis=0)) / np.std(data_test, axis=0)
+
+        scaler = MinMaxScaler()
+        scaler.fit(normalized_train_data)
+
+        #归一化
+        normalized_train_data = scaler.transform(normalized_train_data)
+        normalized_test_data = scaler.transform(normalized_test_data)
+
+        '''
+        for i in range(len(data_train) - self._train_step - 5):
+            for u in range(self._train_step - 5):
+                if u == 0:
+                    x = data_train[u+i:u+i+4,:].reshape(-1,20)
+                else:
+                    t = data_train[u+i:u+i+4,:].reshape(-1,20)
+                    x = np.vstack((x,t))
+
+            y = data_train[i+5:i+self._train_step,0,np.newaxis]
+            self._x_train.append(x)
+            self._y_train.append(y)
+        '''
+
+        for i in range(len(data_train) - self._train_step):
+            for u in range(self._train_step - (self._dim + self._next_time)):
+                if u == 0:
+                    x = normalized_train_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                else:
+                    t = normalized_train_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                    x = np.vstack((x, t))
+
+            # x = normalized_train_data[i:i+self._train_step, :]
+            y = normalized_train_data[i + self._next_time:i + self._train_step + self._next_time, 0, np.newaxis]
+            self._x_train.append(x)
+            self._y_train.append(y)
+
+        test_step = self._test_step if (len(data_test) - 1) > self._test_step else (len(data_test) - 1)
+
+        for i in range(len(data_test) - test_step):
+            for u in range(self._train_step - (self._dim + self._next_time)):
+                if u == 0:
+                    tx = normalized_test_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                else:
+                    t = normalized_test_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                    tx = np.vstack((tx, t))
+            ty = normalized_test_data[i + self._next_time:i + self._test_step + self._next_time, 0, np.newaxis]
+            self._x_test.append(tx)
+            self._y_test.append(ty)
+
+
 
     def __calc_model_data(self, data):
         data = data.drop(
             ['Unnamed: 0', 'date', 'mtd', 'pabp', 'pabv', 'pasp', 'pasv', 'plbp', 'plbv', 'plsp', 'plsv', 'time',
              'vol'], 1)
         n = data.shape[0]
-        p = data.shape[1]
 
         data = data.values
         train_start = 0
@@ -34,49 +106,7 @@ class PDataSet(object):
 
         data_train = data[np.arange(train_start, train_end), :]
         data_test = data[np.arange(test_start, test_end), :]
-        '''
-        for i in range(len(data_train) - self._train_step - 5):
-            for u in range(self._train_step - 5):
-                if u == 0:
-                    x = data_train[u+i:u+i+4,:].reshape(-1,20)
-                else:
-                    t = data_train[u+i:u+i+4,:].reshape(-1,20)
-                    x = np.vstack((x,t))
-            
-            y = data_train[i+5:i+self._train_step,0,np.newaxis]
-            self._x_train.append(x)
-            self._y_train.append(y)
-        '''
-
-        normalized_train_data = (data_train - np.mean(data_train, axis=0)) / np.std(data_train, axis=0)
-        normalized_test_data = (data_test - np.mean(data_test, axis=0)) / np.std(data_test, axis=0)
-
-        scaler = MinMaxScaler()
-        scaler.fit(normalized_train_data)
-
-        normalized_train_data = scaler.transform(normalized_train_data)
-        normalized_test_data = scaler.transform(normalized_test_data)
-
-        for i in range(len(data_train) - self._train_step):
-            for u in range(self._train_step - 5):
-                if u == 0:
-                    x = normalized_train_data[u + i:u + i + 4, :].reshape(-1, 16)
-                else:
-                    t = normalized_train_data[u + i:u + i + 4, :].reshape(-1, 16)
-                    x = np.vstack((x, t))
-
-            # x = normalized_train_data[i:i+self._train_step, :]
-            y = normalized_train_data[i + 1:i + self._train_step + 1, 0, np.newaxis]
-            self._x_train.append(x)
-            self._y_train.append(y)
-
-        test_step = self._test_step if (len(data_test) - 1) > self._test_step else (len(data_test) - 1)
-
-        for i in range(len(data_test) - test_step):
-            tx = normalized_test_data[i:test_step, :]
-            ty = normalized_test_data[i + 1:test_step + 1, 0, np.newaxis]
-            self._x_test.append(tx)
-            self._y_test.append(ty)
+        self._calc_price_data(data_train, data_test)
 
     def train_batch(self):
         return self._x_train, self._y_train
@@ -176,33 +206,19 @@ class GFDataSet(object):
         self.__calc_model_data(data)
 
 
-class DataSets(object):
-    def __init__(self):
-        self.gf_data_sets = []
-
-    def gf_etf(self, dir):
-        for path, dirs, fs in os.walk(dir):
-            for f in fs:
-                data_sets = GFDataSet()
-                data_sets.calc_etf(os.path.join(path, f))
-                self.gf_data_sets.append(data_sets)
-                # print os.path.join(path, f)
-
-    def gf_train_count(self):
-        return len(self.gf_data_sets)
-
-    def gf_train_batch(self):
-        return iter(self.gf_data_sets)
-
-
 if __name__ == '__main__':
     np.set_printoptions(threshold=np.inf)
     data_set = PDataSet()
-    data_set.calc_etf('./data/out_dir/ag1606_20160104.csv')
-    train_x, train_y = data_set.train_batch()
-    print np.array(train_x[1:2])
-    print '----------->'
-    print np.array(train_y[1:2])
+    data_set.calc_etf('/Users/kerry/sec/ag1606_20160104.csv')
+    # train_x, train_y = data_set.train_batch()
+    # print np.array(train_x[1:2])
+    # print '----------->'
+    # print np.array(train_y[1:2])
+
+    test_x, test_y = data_set.test_batch()
+    print np.array(test_x[1:2])
+    print '<------------'
+    print np.array(test_y[1:2])
     # print np.array(train_x[0:1])
     # print '--------->'
     # print np.array(train_y[0:1])
