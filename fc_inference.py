@@ -62,3 +62,39 @@ def chg_inference(input_tensor, monitor, avg_class, reuse): #涨跌幅前向计�
     output = chg_nn_layer(hidden4, neurons_layer4, n_target,
                           'output', monitor, avg_class, reuse)
     return output
+
+
+def per_chg_nn_layer(input_tensor, input_dim, out_dim, layer_name, monitor, avg_class=None,reuse=False, act=tf.nn.relu):
+
+    weights = tf.Variable(tf.truncated_normal(shape=[input_dim,out_dim],
+                                                         stddev=0.1))
+
+    biases = tf.Variable(tf.constant(0.0,shape=[out_dim]))
+    
+    if avg_class == None:
+        preactive = tf.add(tf.matmul(input_tensor, weights), biases)
+    else:
+        preactive = tf.add(tf.matmul(input_tensor, avg_class.average(weights)) + avg_class.average(biases))
+
+
+    activations = act(preactive, name='activations')
+
+    return activations
+
+
+def per_chg_inference(input_tensor, monitor, avg_class, reuse): #涨跌幅前向计算
+    hidden1 = per_chg_nn_layer(input_tensor, INPUT_NODE, neurons_layer1,
+                           'layer1', monitor,avg_class, reuse)
+
+    hidden2 = per_chg_nn_layer(hidden1, neurons_layer1, neurons_layer2,
+                           'layer2', monitor, avg_class, reuse)
+
+    hidden3 = per_chg_nn_layer(hidden2, neurons_layer2, neurons_layer3,
+                           'layer3', monitor, avg_class, reuse)
+
+    hidden4 = per_chg_nn_layer(hidden3, neurons_layer3, neurons_layer4,
+                           'layer4', monitor, avg_class, reuse)
+
+    output = per_chg_nn_layer(hidden4, neurons_layer4, n_target,
+                          'output', monitor, avg_class, reuse)
+    return output
