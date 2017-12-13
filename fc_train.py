@@ -78,7 +78,7 @@ def train(data_sets, batch_size = 50, time_step = 55):
         f_monitor.create(sess.graph)
 
         tf.global_variables_initializer().run()
-        for i in range(10):
+        for i in range(100):
             while data_sets.is_range():
                 data_set = data_sets.train_batch()
                 print("filename %s" %(data_set.file_name()))
@@ -100,7 +100,7 @@ def main(argv=None):
    # data_set.calc_etf('./data/out_dir/ag1606_20160104.csv')
    # train(data_set, data_set.batch_size(),data_set.train_step())
    data_sets = DataSets()
-   data_sets.gf_etf('./data/tmp')
+   data_sets.gf_etf('./data/out_dir')
    train(data_sets)
 
 if __name__ == '__main__':
